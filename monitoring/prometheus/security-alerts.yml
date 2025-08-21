@@ -1,0 +1,297 @@
+# Security Alerting Rules for Prometheus
+groups:
+  - name: security.alerts
+    rules:
+      # Critical Security Alerts
+      - alert: CriticalVulnerabilityDetected
+        expr: security_vulnerabilities_total{severity="CRITICAL"} > 0
+        for: 0m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Critical security vulnerability detected"
+          description: "{{ $labels.component }} has {{ $value }} critical vulnerabilities"
+          runbook_url: "https://security.example.com/runbooks/critical-vulnerability"
+          
+      - alert: HighVulnerabilityThreshold
+        expr: security_vulnerabilities_total{severity="HIGH"} > 5
+        for: 5m
+        labels:
+          severity: high
+          category: security
+        annotations:
+          summary: "High number of high-severity vulnerabilities"
+          description: "{{ $labels.component }} has {{ $value }} high-severity vulnerabilities"
+          
+      - alert: ComplianceScoreBelowThreshold
+        expr: security_compliance_score < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          category: compliance
+        annotations:
+          summary: "Compliance score below acceptable threshold"
+          description: "{{ $labels.component }} compliance score is {{ $value | humanizePercentage }}"
+          
+      # Security Scan Failures
+      - alert: SecurityScanFailure
+        expr: rate(security_scan_failures_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          category: monitoring
+        annotations:
+          summary: "Security scan failures detected"
+          description: "{{ $labels.tool }} security scan is failing"
+          
+      - alert: SecurityScanTimeout
+        expr: security_scan_duration_seconds > 600
+        for: 1m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Security scan taking too long"
+          description: "{{ $labels.tool }} scan duration is {{ $value }}s"
+          
+      # Policy Violations
+      - alert: SecurityPolicyViolation
+        expr: rate(security_policy_violations_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          category: compliance
+        annotations:
+          summary: "Security policy violations detected"
+          description: "{{ $labels.policy }} policy violations detected"
+          
+      - alert: CriticalPolicyViolation
+        expr: rate(security_policy_violations_total{severity="CRITICAL"}[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          category: compliance
+        annotations:
+          summary: "Critical security policy violation"
+          description: "Critical violation of {{ $labels.policy }} policy"
+          
+      # Incident Response
+      - alert: IncidentResponseTimeout
+        expr: security_incident_response_time_seconds > 300
+        for: 5m
+        labels:
+          severity: critical
+          category: incident
+        annotations:
+          summary: "Security incident response timeout"
+          description: "Incident response time exceeds 5 minutes"
+          
+      - alert: MultipleIncidentsActive
+        expr: count(security_incidents_active) > 3
+        for: 2m
+        labels:
+          severity: warning
+          category: incident
+        annotations:
+          summary: "Multiple security incidents active"
+          description: "{{ $value }} security incidents are currently active"
+          
+      # Authentication Security
+      - alert: HighAuthFailureRate
+        expr: rate(security_auth_failures_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: authentication
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failures: {{ $value }} per second"
+          
+      - alert: BruteForceAttack
+        expr: rate(security_auth_failures_total[1m]) > 50
+        for: 1m
+        labels:
+          severity: critical
+          category: attack
+        annotations:
+          summary: "Potential brute force attack detected"
+          description: "{{ $value }} auth failures per minute - possible attack"
+          
+      # Authorization Violations
+      - alert: AuthorizationViolations
+        expr: rate(security_authz_violations_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          category: authorization
+        annotations:
+          summary: "Authorization violations detected"
+          description: "{{ $value }} authorization violations per second"
+          
+      - alert: PrivilegeEscalationAttempt
+        expr: rate(security_authz_violations_total{action="privilege_escalation"}[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          category: attack
+        annotations:
+          summary: "Privilege escalation attempt detected"
+          description: "User attempting to escalate privileges"
+          
+      # Network Security
+      - alert: SuspiciousNetworkActivity
+        expr: rate(security_network_events_total{event_type="suspicious"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: network
+        annotations:
+          summary: "Suspicious network activity detected"
+          description: "{{ $value }} suspicious network events per second"
+          
+      - alert: PortScanDetected
+        expr: rate(security_network_events_total{event_type="port_scan"}[1m]) > 20
+        for: 1m
+        labels:
+          severity: warning
+          category: attack
+        annotations:
+          summary: "Port scan activity detected"
+          description: "{{ $value }} port scan attempts per minute"
+          
+      - alert: DDoSAttack
+        expr: rate(security_network_events_total{event_type="ddos"}[1m]) > 100
+        for: 1m
+        labels:
+          severity: critical
+          category: attack
+        annotations:
+          summary: "DDoS attack detected"
+          description: "{{ $value }} DDoS events per minute"
+          
+      # Data Security
+      - alert: UnauthorizedDataAccess
+        expr: rate(security_data_access_total{access_level="unauthorized"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: data
+        annotations:
+          summary: "Unauthorized data access detected"
+          description: "Unauthorized access to {{ $labels.data_type }}"
+          
+      - alert: SensitiveDataExfiltration
+        expr: rate(security_data_access_total{data_type="sensitive"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: critical
+          category: data
+        annotations:
+          summary: "Potential data exfiltration detected"
+          description: "High volume of sensitive data access"
+          
+      # Container Security
+      - alert: ContainerVulnerabilityDetected
+        expr: container_vulnerabilities_total{severity=~"CRITICAL|HIGH"} > 0
+        for: 0m
+        labels:
+          severity: high
+          category: container
+        annotations:
+          summary: "Container vulnerabilities detected"
+          description: "{{ $labels.image }} has {{ $value }} vulnerabilities"
+          
+      - alert: ContainerRuntimeThreat
+        expr: container_runtime_threats_total > 0
+        for: 0m
+        labels:
+          severity: critical
+          category: container
+        annotations:
+          summary: "Container runtime threat detected"
+          description: "Runtime threat detected in {{ $labels.container }}"
+          
+      # Infrastructure Security
+      - alert: InfrastructureComplianceFailure
+        expr: infrastructure_compliance_score < 0.9
+        for: 10m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "Infrastructure compliance below threshold"
+          description: "Infrastructure compliance score: {{ $value | humanizePercentage }}"
+          
+      - alert: SecurityToolFailure
+        expr: up{job=~"sonarqube|trivy|zap"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          category: monitoring
+        annotations:
+          summary: "Security tool {{ $labels.job }} is down"
+          description: "Security scanning tool is not responding"
+          
+      # Threat Intelligence
+      - alert: KnownThreatDetected
+        expr: security_threats_detected_total{threat_type="known"} > 0
+        for: 0m
+        labels:
+          severity: critical
+          category: threat
+        annotations:
+          summary: "Known threat detected"
+          description: "Known threat {{ $labels.threat_id }} detected from {{ $labels.source }}"
+          
+      - alert: ZeroDayVulnerability
+        expr: security_vulnerabilities_total{severity="UNKNOWN"} > 0
+        for: 0m
+        labels:
+          severity: critical
+          category: vulnerability
+        annotations:
+          summary: "Unknown severity vulnerability detected"
+          description: "{{ $labels.component }} has {{ $value }} unknown severity vulnerabilities"
+          
+      # Compliance and Audit
+      - alert: AuditLogFailure
+        expr: rate(audit_log_failures_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          category: audit
+        annotations:
+          summary: "Audit logging failures detected"
+          description: "Audit log system is experiencing failures"
+          
+      - alert: ComplianceCheckFailure
+        expr: compliance_check_duration > 120
+        for: 2m
+        labels:
+          severity: warning
+          category: compliance
+        annotations:
+          summary: "Compliance check taking too long"
+          description: "Compliance check duration: {{ $value }}s"
+          
+      # Performance and Availability
+      - alert: SecurityToolHighLatency
+        expr: security_scan_duration_seconds > 300
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Security tool experiencing high latency"
+          description: "{{ $labels.tool }} scan duration: {{ $value }}s"
+          
+      - alert: SecurityMetricsCollectionFailure
+        expr: up{job=~"app-security|infra-security"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          category: monitoring
+        annotations:
+          summary: "Security metrics collection failure"
+          description: "Security metrics collection is down"

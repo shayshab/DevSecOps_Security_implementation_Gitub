@@ -1,0 +1,34 @@
+sonar.projectKey=devsecops-project
+sonar.projectName=DevSecOps Security Project
+sonar.projectVersion=1.0.0
+
+# Source code configuration
+sonar.sources=src
+sonar.tests=tests
+sonar.exclusions=**/node_modules/**,**/vendor/**,**/dist/**,**/build/**
+
+# Security rules configuration
+sonar.security.sources.javasecurity=src
+sonar.security.sources.pythonsecurity=src
+sonar.security.sources.jssecurity=src
+
+# Quality gates
+sonar.qualitygate.wait=true
+
+# Security hotspots
+sonar.security.hotspots.report=true
+
+# Vulnerability reporting
+sonar.vulnerability.report=true
+
+# Security rules
+sonar.rules.security=java:S5146,java:S5144,java:S5143,python:S5146,js:S5146
+
+# Exclude false positives
+sonar.issue.ignore.multicriteria=1
+sonar.issue.ignore.multicriteria.1.ruleKey=java:S5146
+sonar.issue.ignore.multicriteria.1.resourceKey=**/test/**
+
+# Report formats
+sonar.report.export.path=reports/
+sonar.report.export.format=html,json

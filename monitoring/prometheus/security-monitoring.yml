@@ -1,0 +1,206 @@
+# Prometheus Configuration for Security Monitoring
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alerting rules
+rule_files:
+  - "security-alerts.yml"
+  - "compliance-rules.yml"
+
+# Alert manager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Kubernetes API server
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+      - role: endpoints
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      insecure_skip_verify: false
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: default;kubernetes;https
+
+  # Kubernetes nodes
+  - job_name: 'kubernetes-nodes'
+    kubernetes_sd_configs:
+      - role: node
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      insecure_skip_verify: false
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics
+
+  # Kubernetes pods
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: kubernetes_pod_name
+
+  # Security scanning tools
+  - job_name: 'sonarqube'
+    static_configs:
+      - targets: ['sonarqube:9000']
+    metrics_path: /api/metrics
+    scrape_interval: 30s
+
+  - job_name: 'trivy'
+    static_configs:
+      - targets: ['trivy:8080']
+    scrape_interval: 60s
+
+  - job_name: 'owasp-zap'
+    static_configs:
+      - targets: ['zap:8080']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # Application security metrics
+  - job_name: 'app-security'
+    static_configs:
+      - targets: ['app:3000']
+    metrics_path: /metrics/security
+    scrape_interval: 15s
+
+  # Infrastructure security metrics
+  - job_name: 'infra-security'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+# Recording rules for security metrics
+recording_rules:
+  - record: security:vulnerabilities_total
+    expr: sum(security_vulnerabilities_total) by (severity, component)
+  
+  - record: security:compliance_score
+    expr: avg(security_compliance_score) by (environment, component)
+  
+  - record: security:scan_duration_seconds
+    expr: histogram_quantile(0.95, sum(rate(security_scan_duration_seconds_bucket[5m])) by (le, tool))
+  
+  - record: security:failed_scans_total
+    expr: sum(rate(security_scan_failures_total[5m])) by (tool, reason)
+  
+  - record: security:policy_violations_total
+    expr: sum(rate(security_policy_violations_total[5m])) by (policy, severity)
+  
+  - record: security:incident_response_time_seconds
+    expr: histogram_quantile(0.95, sum(rate(security_incident_response_time_seconds_bucket[5m])) by (le, incident_type))
+  
+  - record: security:threat_detection_rate
+    expr: sum(rate(security_threats_detected_total[5m])) by (threat_type, source)
+  
+  - record: security:authentication_failures_total
+    expr: sum(rate(security_auth_failures_total[5m])) by (method, user_type)
+  
+  - record: security:authorization_violations_total
+    expr: sum(rate(security_authz_violations_total[5m])) by (resource, user_role)
+  
+  - record: security:data_access_audit_total
+    expr: sum(rate(security_data_access_total[5m])) by (data_type, access_level, user_role)
+  
+  - record: security:network_security_events_total
+    expr: sum(rate(security_network_events_total[5m])) by (event_type, source_ip, destination_ip)
+
+# Security metrics collection
+security_metrics:
+  # Vulnerability metrics
+  vulnerability_scan_duration:
+    description: "Duration of vulnerability scans"
+    type: histogram
+    buckets: [10, 30, 60, 120, 300, 600]
+  
+  vulnerability_count:
+    description: "Number of vulnerabilities by severity"
+    type: gauge
+    labels: [severity, component, cve_id]
+  
+  # Compliance metrics
+  compliance_check_duration:
+    description: "Duration of compliance checks"
+    type: histogram
+    buckets: [1, 5, 10, 30, 60]
+  
+  compliance_score:
+    description: "Compliance score by component"
+    type: gauge
+    labels: [component, policy, environment]
+  
+  # Security incident metrics
+  incident_detection_time:
+    description: "Time to detect security incidents"
+    type: histogram
+    buckets: [1, 5, 15, 30, 60, 300]
+  
+  incident_response_time:
+    description: "Time to respond to security incidents"
+    type: histogram
+    buckets: [1, 5, 15, 30, 60, 300, 600]
+  
+  # Authentication and authorization metrics
+  auth_failure_rate:
+    description: "Authentication failure rate"
+    type: counter
+    labels: [method, user_type, source_ip]
+  
+  authz_violation_rate:
+    description: "Authorization violation rate"
+    type: counter
+    labels: [resource, user_role, action]
+  
+  # Network security metrics
+  network_security_events:
+    description: "Network security events"
+    type: counter
+    labels: [event_type, source_ip, destination_ip, protocol]
+  
+  # Data security metrics
+  data_access_audit:
+    description: "Data access audit events"
+    type: counter
+    labels: [data_type, access_level, user_role, timestamp]

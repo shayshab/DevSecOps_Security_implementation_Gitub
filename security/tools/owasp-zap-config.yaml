@@ -1,0 +1,55 @@
+# OWASP ZAP Configuration for DAST Scanning
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zap-config
+  namespace: security-scanning
+data:
+  zap.conf: |
+    # ZAP Configuration for DevSecOps
+    # Target application configuration
+    target.url=https://example-app.com
+    target.scope=https://example-app.com/*
+    
+    # Scan policies
+    scan.policy=OWASP Top 10 2021
+    scan.include.urls=.*
+    scan.exclude.urls=.*/logout.*,.*/admin.*
+    
+    # Authentication configuration
+    auth.type=form
+    auth.loginurl=https://example-app.com/login
+    auth.username=testuser
+    auth.password=testpass
+    auth.username.field=username
+    auth.password.field=password
+    
+    # Scan depth and scope
+    scan.depth=5
+    scan.max.children=100
+    scan.threads=10
+    
+    # Security test configuration
+    security.tests.xss=true
+    security.tests.sqli=true
+    security.tests.csrf=true
+    security.tests.open_redirect=true
+    security.tests.ssrf=true
+    
+    # Reporting configuration
+    report.format=html,json,xml
+    report.output.dir=./reports/zap
+    report.template=traditional-html-plus
+    
+    # Performance settings
+    scan.timeout=300
+    scan.max.duration=3600
+    
+    # Alert thresholds
+    alert.threshold.high=1
+    alert.threshold.medium=5
+    alert.threshold.low=10
+    
+    # False positive handling
+    alert.false.positive.check=true
+    alert.false.positive.report=true

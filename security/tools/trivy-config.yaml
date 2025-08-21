@@ -1,0 +1,99 @@
+# Trivy Configuration for Container and Dependency Security
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trivy-config
+  namespace: security-scanning
+data:
+  trivy.yaml: |
+    # Trivy Configuration
+    global:
+      # Security database
+      db:
+        repository: "ghcr.io/aquasecurity/trivy-db"
+        skip_update: false
+        download_only: false
+      
+      # Cache settings
+      cache:
+        dir: "/tmp/trivy"
+        backend: "fs"
+      
+      # Timeout settings
+      timeout: 300s
+    
+    # Vulnerability scanning
+    vulnerability:
+      # Severity levels to report
+      severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
+      
+      # Ignore specific vulnerabilities
+      ignore_unfixed: false
+      
+      # Exit code on vulnerabilities
+      exit_code: 1
+      
+      # Ignore file for false positives
+      ignore_file: ".trivyignore"
+      
+      # Output formats
+      format: "table,json,sarif"
+      
+      # Output file
+      output: "trivy-results"
+    
+    # Container image scanning
+    image:
+      # Platform
+      platform: "linux/amd64"
+      
+      # Image reference
+      ref: ""
+      
+      # Image config
+      config: ""
+      
+      # Image metadata
+      metadata: ""
+    
+    # Repository scanning
+    repository:
+      # Branch/tag to scan
+      branch: "main"
+      
+      # Commit to scan
+      commit: ""
+      
+      # Scan depth
+      depth: 0
+    
+    # Artifact scanning
+    artifact:
+      # Skip files
+      skip_files: ""
+      
+      # Skip directories
+      skip_dirs: ""
+      
+      # Include paths
+      include_paths: ""
+      
+      # Exclude paths
+      exclude_paths: ""
+    
+    # Reporting
+    report:
+      # Output directory
+      output: "./reports/trivy"
+      
+      # Cache results
+      cache: true
+      
+      # Format options
+      format:
+        table:
+          output: "trivy-table.txt"
+        json:
+          output: "trivy-results.json"
+        sarif:
+          output: "trivy-results.sarif"

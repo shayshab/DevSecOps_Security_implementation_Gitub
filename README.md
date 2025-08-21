@@ -85,7 +85,6 @@ A comprehensive DevSecOps implementation demonstrating operational toolchains th
 3. Run security scans: `./scripts/security-scan.sh`
 4. Submit a pull request
 
-## 📄 License
+Developed By
+Shayshab Azad
 
-MIT License - see LICENSE file for details
-# DevSecOps_Security_implementation_Gitub
